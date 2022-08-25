@@ -25,13 +25,14 @@ func main() {
 
 		var input string
 
-		if len(r.URL.Path) < 2 {
+		names, ok := r.URL.Query()["name"]
+		if !ok || len(names[0]) < 1 {
 			default_image := getDefaultImage()
 			rw.Write(default_image)
 			return
 		}
 
-		input = r.URL.Path[1:]
+		input = names[0]
 
 		input = strings.ToLower(input)
 
