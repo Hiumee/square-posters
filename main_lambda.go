@@ -5,14 +5,21 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
 type Output struct {
-	Headers map[string]string `json:"headers"`
-	Body    string            `json:"body"`
+	StatusCode      int               `json:"statusCode"`
+	Headers         map[string]string `json:"headers"`
+	Body            string            `json:"body"`
+	IsBase64Encoded bool              `json:"isBase64Encoded"`
+}
+
+type MyEvent struct {
+	Name string `json:"name"`
 }
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (Output, error) {
@@ -33,10 +40,12 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	}
 
 	return Output{
+		StatusCode: 200,
 		Headers: map[string]string{
 			"Content-Type": "image/jpeg",
 		},
-		Body: string(image),
+		Body:            base64.StdEncoding.EncodeToString(image),
+		IsBase64Encoded: true,
 	}, nil
 }
 
