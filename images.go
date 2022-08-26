@@ -21,6 +21,7 @@ type Result struct {
 	Title         string `json:"title"`
 	OriginalTitle string `json:"original_title"`
 	Popularity    int    `json:"popularity"`
+	MediaType     string `json:"media_type"`
 }
 
 type TvResult struct {
@@ -56,7 +57,7 @@ func getDefaultImage() []byte {
 	return imageData
 }
 
-func getByTitle(title string) (string, bool) {
+func getByTitle(title string, mediaType string) (string, bool) {
 	url := fmt.Sprintf("https://api.themoviedb.org/3/search/multi?query=%s&api_key=%s", url.QueryEscape(title), api_key)
 	data, _ := http.Get(url)
 
@@ -76,15 +77,27 @@ func getByTitle(title string) (string, bool) {
 		return "", false
 	}
 
+	if mediaType != "" {
+		filtered := make([]Result, 0)
+		for _, result := range response.Results {
+			if result.MediaType == mediaType {
+				filtered = append(filtered, result)
+			}
+		}
+		response.Results = filtered
+	}
+
 	var poster = ""
 
 	bestPopularity := 0
 
 	for _, result := range response.Results {
-		if strings.ToLower(result.Title) == title || strings.ToLower(result.OriginalTitle) == title {
-			if bestPopularity < result.Popularity {
-				poster = result.Poster
-				bestPopularity = result.Popularity
+		if result.MediaType == mediaType || mediaType == "" {
+			if strings.ToLower(result.Title) == title || strings.ToLower(result.OriginalTitle) == title {
+				if bestPopularity < result.Popularity {
+					poster = result.Poster
+					bestPopularity = result.Popularity
+				}
 			}
 		}
 	}
@@ -167,12 +180,16 @@ func getImage(title string, id string, mediaType string) ([]byte, bool) {
 	poster := ""
 	ok := false
 
+	if mediaType != "movie" && mediaType != "tv" {
+		mediaType = ""
+	}
+
 	if id != "" {
 		poster, ok = getById(id, mediaType)
 	}
 
 	if !ok {
-		poster, ok = getByTitle(title)
+		poster, ok = getByTitle(title, mediaType)
 	}
 
 	if !ok {
