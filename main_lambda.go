@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"log"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -29,7 +30,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 
 	var image []byte
 
-	log.Println("Name:", input)
+	log.Println("Name:", name)
 	log.Println("Id:", id)
 	log.Println("MediaType:", mediaType)
 
