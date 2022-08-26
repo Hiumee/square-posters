@@ -92,12 +92,10 @@ func getByTitle(title string, mediaType string) (string, bool) {
 	bestPopularity := 0
 
 	for _, result := range response.Results {
-		if result.MediaType == mediaType || mediaType == "" {
-			if strings.ToLower(result.Title) == title || strings.ToLower(result.OriginalTitle) == title {
-				if bestPopularity < result.Popularity {
-					poster = result.Poster
-					bestPopularity = result.Popularity
-				}
+		if strings.ToLower(result.Title) == title || strings.ToLower(result.OriginalTitle) == title {
+			if bestPopularity < result.Popularity {
+				poster = result.Poster
+				bestPopularity = result.Popularity
 			}
 		}
 	}
