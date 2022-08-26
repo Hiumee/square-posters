@@ -26,19 +26,31 @@ func main() {
 		var input string
 
 		names, ok := r.URL.Query()["name"]
-		if !ok || len(names[0]) < 1 {
+		if ok {
+			input = strings.ToLower(names[0])
+		}
+
+		id := ""
+		ids, ok := r.URL.Query()["id"]
+		if ok {
+			id = ids[0]
+		}
+
+		mediaType := ""
+		mediaTypes, ok := r.URL.Query()["type"]
+		if ok {
+			mediaType = mediaTypes[0]
+		}
+
+		log.Println("Request data", input, id, mediaType)
+
+		if input == "" && id == "" && mediaType == "" {
 			default_image := getDefaultImage()
 			rw.Write(default_image)
 			return
 		}
 
-		input = names[0]
-
-		input = strings.ToLower(input)
-
-		log.Println(input)
-
-		image, ok := getImage(input)
+		image, ok := getImage(input, id, mediaType)
 
 		if ok {
 			rw.Write(image)

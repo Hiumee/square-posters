@@ -24,14 +24,15 @@ type MyEvent struct {
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (Output, error) {
 	name := request.QueryStringParameters["name"]
-	// id := request.QueryStringParameters["id"]
+	id := request.QueryStringParameters["id"]
+	mediaType := request.QueryStringParameters["type"]
 
 	var image []byte
 
-	if len(name) < 2 {
+	if name == "" && id == "" && mediaType == "" {
 		image = getDefaultImage()
 	} else {
-		im, ok := getImage(name)
+		im, ok := getImage(name, id, mediaType)
 		if ok {
 			image = im
 		} else {

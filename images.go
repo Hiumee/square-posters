@@ -8,7 +8,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/jpeg"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -23,38 +23,57 @@ type Result struct {
 	Popularity    int    `json:"popularity"`
 }
 
+type TvResult struct {
+	Poster        string `json:"poster_path"`
+	Title         string `json:"name"`
+	OriginalTitle string `json:"original_name"`
+	Popularity    int    `json:"popularity"`
+}
+
+type EpisodeResult struct {
+	ShowId int `json:"show_id"`
+}
+
 type Response struct {
 	Results []Result `json:"results"`
+}
+
+type IdResponse struct {
+	Movies   []Result        `json:"movie_results"`
+	Tv       []TvResult      `json:"tv_results"`
+	Episodes []EpisodeResult `json:"tv_episode_results"`
 }
 
 var api_key = os.Getenv("TMDB_APIKEY")
 
 func getDefaultImage() []byte {
-	image_data, err := os.ReadFile("default.png")
+	imageData, err := os.ReadFile("default.png")
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return image_data
+	return imageData
 }
 
-func getImage(title string) ([]byte, bool) {
+func getByTitle(title string) (string, bool) {
 	url := fmt.Sprintf("https://api.themoviedb.org/3/search/multi?query=%s&api_key=%s", url.QueryEscape(title), api_key)
 	data, _ := http.Get(url)
 
-	body, _ := ioutil.ReadAll(data.Body)
-
 	if data.StatusCode != 200 {
-		fmt.Println(data.StatusCode)
+		log.Println("TMDB API error. Status code", data.StatusCode)
+		return "", false
 	}
+
+	defer data.Body.Close()
+	body, _ := io.ReadAll(data.Body)
 
 	var response Response
 
 	json.Unmarshal(body, &response)
 
 	if len(response.Results) == 0 {
-		return nil, false
+		return "", false
 	}
 
 	var poster = ""
@@ -75,21 +94,104 @@ func getImage(title string) ([]byte, bool) {
 	}
 
 	if poster == "" {
+		return "", false
+	}
+
+	return poster, true
+}
+
+func getShowPoster(id int) (string, bool) {
+	if id == 0 {
+		return "", false
+	}
+
+	url := fmt.Sprintf("https://api.themoviedb.org/3/tv/%d?api_key=%s", id, api_key)
+	data, _ := http.Get(url)
+
+	if data.StatusCode != 200 {
+		log.Println("TMDB API error. Status code", data.StatusCode)
+		return "", false
+	}
+
+	defer data.Body.Close()
+	body, _ := io.ReadAll(data.Body)
+
+	var response TvResult
+	json.Unmarshal(body, &response)
+
+	if response.Poster == "" {
+		return "", false
+	}
+	return response.Poster, true
+}
+
+func getById(id string, mediaType string) (string, bool) {
+	var idSource string
+	if id[0] == 't' {
+		idSource = "imdb_id"
+	} else {
+		return "", false
+		// idSource = "tvdb_id"
+		// Skip tvdb_id for now, not getting expected results
+	}
+
+	url := fmt.Sprintf("https://api.themoviedb.org/3/find/%s?api_key=%s&external_source=%s", url.QueryEscape(id), api_key, idSource)
+	data, _ := http.Get(url)
+
+	if data.StatusCode != 200 {
+		log.Println("TMDB API error. Status code", data.StatusCode)
+		return "", false
+	}
+
+	defer data.Body.Close()
+	body, _ := io.ReadAll(data.Body)
+	log.Println(string(body))
+
+	var response IdResponse
+	json.Unmarshal(body, &response)
+
+	if len(response.Movies) > 0 && (mediaType == "movie" || mediaType == "") {
+		return response.Movies[0].Poster, true
+	}
+	if len(response.Tv) > 0 && (mediaType == "tv" || mediaType == "") {
+		return response.Tv[0].Poster, true
+	}
+	if len(response.Episodes) > 0 && (mediaType == "tv" || mediaType == "") {
+		return getShowPoster(response.Episodes[0].ShowId)
+	}
+
+	return "", false
+}
+
+func getImage(title string, id string, mediaType string) ([]byte, bool) {
+	poster := ""
+	ok := false
+
+	if id != "" {
+		poster, ok = getById(id, mediaType)
+	}
+
+	if !ok {
+		poster, ok = getByTitle(title)
+	}
+
+	if !ok {
 		return nil, false
 	}
 
-	image_url := fmt.Sprintf("https://image.tmdb.org/t/p/w500%s", poster)
+	// Download the image
+	imageUrl := fmt.Sprintf("https://image.tmdb.org/t/p/w500%s", poster)
+	imageData, _ := http.Get(imageUrl)
+	im, _, _ := image.Decode(imageData.Body)
+	defer imageData.Body.Close()
 
-	image_data, _ := http.Get(image_url)
-
-	im, _, _ := image.Decode(image_data.Body)
+	// Create a new image with the right size and add border
 	im = im.(interface {
 		SubImage(r image.Rectangle) image.Image
 	}).SubImage(image.Rect(0, 0, 500, 500))
 
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{512, 512}
-
 	blackcolor := color.RGBA{24, 25, 28, 255}
 
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
