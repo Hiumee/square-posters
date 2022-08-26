@@ -42,11 +42,14 @@ func main() {
 			mediaType = mediaTypes[0]
 		}
 
-		log.Println("Request data", input, id, mediaType)
+		log.Println("Name:", input)
+		log.Println("Id:", id)
+		log.Println("MediaType:", mediaType)
 
 		if input == "" && id == "" && mediaType == "" {
 			default_image := getDefaultImage()
 			rw.Write(default_image)
+			log.Println("No input, returning default image")
 			return
 		}
 
@@ -54,9 +57,11 @@ func main() {
 
 		if ok {
 			rw.Write(image)
+			log.Println("Found image")
 		} else {
 			default_image := getDefaultImage()
 			rw.Write(default_image)
+			log.Println("No image found, returning default image")
 		}
 	})
 	port := os.Getenv("PORT")

@@ -29,14 +29,21 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 
 	var image []byte
 
+	log.Println("Name:", input)
+	log.Println("Id:", id)
+	log.Println("MediaType:", mediaType)
+
 	if name == "" && id == "" && mediaType == "" {
 		image = getDefaultImage()
+		log.Println("No input, returning default image")
 	} else {
 		im, ok := getImage(name, id, mediaType)
 		if ok {
 			image = im
+			log.Println("Found image")
 		} else {
 			image = getDefaultImage()
+			log.Println("No image found, returning default image")
 		}
 	}
 

@@ -156,7 +156,6 @@ func getById(id string, mediaType string) (string, bool) {
 
 	defer data.Body.Close()
 	body, _ := io.ReadAll(data.Body)
-	log.Println(string(body))
 
 	var response IdResponse
 	json.Unmarshal(body, &response)
