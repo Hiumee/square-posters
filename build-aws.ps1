@@ -1,4 +1,5 @@
 go get -u github.com/aws/aws-lambda-go/cmd/build-lambda-zip
+go install github.com/aws/aws-lambda-go/cmd/build-lambda-zip
 $env:GOOS = "linux"
 $env:CGO_ENABLED = "0"
 $env:GOARCH = "amd64"
