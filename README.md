@@ -2,7 +2,7 @@
 
 This is a web application that returns square posters for movies and tv shows. It uses the [TMDB API](https://developers.themoviedb.org/3/) and gets the top part of the poster to a size of 512x512 including a 6-pixels wide border.
 
-The search is based on the name or an id (only IMDB currently). If both are given, the id will be checked first and then the name if none was found. An aditional media `type` parameter can be passed to filter between movies and tv.
+The search is based on the name or an id (only IMDB and TMDB currently, for TMDB media type has to be set). If both are given, the id will be checked first and then the name if none was found. An aditional media `type` parameter can be passed to filter between movies and tv.
 
 Used mainly with [this Kodi addon](https://github.com/Hiumee/service.discord.richpresence) to give Discord an endpoint for its rich presence feature.
 
