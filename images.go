@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"strconv"
 )
 
 type Result struct {
@@ -111,6 +112,34 @@ func getByTitle(title string, mediaType string) (string, bool) {
 	return poster, true
 }
 
+func getMoviePoster(id int) (string, bool) {
+	if id == 0 {
+		return "", false
+	}
+
+	url := fmt.Sprintf("https://api.themoviedb.org/3/movie/%d?api_key=%s", id, api_key)
+	data, _ := http.Get(url)
+
+	if data.StatusCode != 200 {
+		log.Println("TMDB API error. Status code", data.StatusCode)
+		return "", false
+	}
+
+	defer data.Body.Close()
+	body, _ := io.ReadAll(data.Body)
+
+	var response Result
+	json.Unmarshal(body, &response)
+
+	if response.Poster == "" {
+		log.Println("Poster not found by movie id")
+		return "", false
+	}
+
+	log.Println("Poster found by movie id")
+	return response.Poster, true
+}
+
 func getShowPoster(id int) (string, bool) {
 	if id == 0 {
 		return "", false
@@ -131,19 +160,33 @@ func getShowPoster(id int) (string, bool) {
 	json.Unmarshal(body, &response)
 
 	if response.Poster == "" {
+		log.Println("Poster not found by tv id")
 		return "", false
 	}
+
+	log.Println("Poster found by tv id")
 	return response.Poster, true
 }
+
 
 func getById(id string, mediaType string) (string, bool) {
 	var idSource string
 	if id[0] == 't' {
 		idSource = "imdb_id"
 	} else {
-		return "", false
-		// idSource = "tvdb_id"
-		// Skip tvdb_id for now, not getting expected results
+		// idSource = "tmdb_id" // Only IMDB and TVDB for now
+		idNum, err := strconv.Atoi(id)
+
+		if err != nil {
+			log.Println("Poster not found by TMDB id")
+			return "", false
+		}
+
+		if mediaType == "movie" {
+			return getMoviePoster(idNum)
+		} else if mediaType == "tv" {
+			return getShowPoster(idNum)
+		}
 	}
 
 	url := fmt.Sprintf("https://api.themoviedb.org/3/find/%s?api_key=%s&external_source=%s", url.QueryEscape(id), api_key, idSource)
@@ -170,6 +213,7 @@ func getById(id string, mediaType string) (string, bool) {
 		return getShowPoster(response.Episodes[0].ShowId)
 	}
 
+	log.Println("Poster not found by IMDB id")
 	return "", false
 }
 
