@@ -1,3 +1,3 @@
 go get github.com/aws/aws-lambda-go/lambda
-GOOS=linux go build -tags awslambda -o main .
-zip function.zip main default.png
+GOARCH=arm64 GOOS=linux go build -tags="lambda.norpc,awslambda" -o bootstrap .
+zip function.zip bootstrap default.png
